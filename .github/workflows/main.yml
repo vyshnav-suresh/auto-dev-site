@@ -12,57 +12,70 @@ jobs:
     env:
       NODE_ENV: production
       OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-      
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 20
-        cache: 'npm'
-        
-    - name: Install Dependencies
-      run: npm ci --production
-      
-    - name: Generate Content
-      run: npm run generate
-      
-    - name: Archive Content
-      uses: actions/upload-artifact@v3
-      with:
-        name: generated-content
-        path: content/posts/
-        retention-days: 3
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci --production
+
+      - name: Generate Content
+        run: npm run generate
+
+      - name: Archive Content
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-content
+          path: content/posts/
+          retention-days: 3
 
   deploy:
     needs: generate-content
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download Content
-      uses: actions/download-artifact@v3
-      with:
-        name: generated-content
-        path: content/posts
-        
-    - name: Setup Hugo
-      uses: peaceiris/actions-hugo@v2
-      with:
-        hugo-version: '0.125.7'
-        extended: true
-        
-    - name: Build Site
-      run: |
-        hugo \
-          --minify \
-          --templateMetrics \
-          --gc
-        
-    - name: Deploy to GH Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./public
-        force_orphan: true
+      - uses: actions/checkout@v4
+
+      - name: Download Content
+        uses: actions/download-artifact@v3
+        with:
+          name: generated-content
+          path: content/posts
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: '0.125.7'
+          extended: true
+
+      - name: Build Site
+        run: |
+          hugo \
+            --minify \
+            --templateMetrics \
+            --gc
+
+      - name: SEO & Optimization
+        run: |
+          npm run generate:sitemap
+          npm run optimize:images
+          npm run check:links
+
+      - name: Deploy to GH Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          force_orphan: true
+
+      - name: Social Sharing
+        if: success()
+        env:
+          TWITTER_KEY: ${{ secrets.TWITTER_KEY }}
+          REDDIT_SECRET: ${{ secrets.REDDIT_SECRET }}
+        run: npm run social:share
