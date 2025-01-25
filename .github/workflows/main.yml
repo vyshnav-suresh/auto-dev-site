@@ -77,5 +77,6 @@ jobs:
         if: success()
         env:
           TWITTER_KEY: ${{ secrets.TWITTER_KEY }}
+          TWITTER_SECRET: ${{ secrets.TWITTER_SECRET }}
           REDDIT_SECRET: ${{ secrets.REDDIT_SECRET }}
         run: npm run social:share
